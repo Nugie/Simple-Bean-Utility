@@ -8,6 +8,8 @@ package com.baculsoft.beanutils.test;
 import com.baculsoft.beanutils.BeanDescriptor;
 import com.baculsoft.beanutils.BeanUtility;
 import com.baculsoft.beanutils.test.pojo.PojoExample;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.util.Date;
 import java.util.Map;
 import org.junit.After;
@@ -75,6 +77,24 @@ public class TestBeanUtili {
         pojoDescriptor.copy(pojoSource, pojoTarget);
 
         assertEquals(pojoDescriptor.describe(pojoSource), pojoDescriptor.describe(pojoTarget));
+    }
+
+    @Test
+    public void testCopyPropertyWhenNotNull() {
+        PojoExample pojoSource = new PojoExample();
+        pojoSource.setStringProp("String Property");
+        pojoSource.setBooleanProp(true);
+        pojoSource.setBooleanProp1(Boolean.TRUE);
+        pojoSource.setDateProp(new Date());
+        pojoSource.setByteProp1(new Byte((byte) 11));
+
+        PojoExample pojoTarget = new PojoExample();
+        pojoTarget.setIntProp1(500);
+        pojoDescriptor.copyPropertyWhenNotNull(pojoSource, pojoTarget);
+
+        assertNotEquals(pojoDescriptor.describe(pojoSource), pojoDescriptor.describe(pojoTarget));
+        assertEquals(pojoDescriptor.invokeGetter("intProp1", pojoSource), null);
+        assertNotEquals(pojoDescriptor.invokeGetter("intProp1", pojoTarget), null);
     }
 
     @Test
@@ -151,10 +171,67 @@ public class TestBeanUtili {
         pojoSource.setBooleanProp1(Boolean.TRUE);
         pojoSource.setDateProp(new Date());
         pojoSource.setByteProp1(new Byte((byte) 15));
-
         PojoExample pojoTarget = new PojoExample();
         pojoDescriptor.copy(pojoSource, pojoTarget);
-
         assertEquals(pojoDescriptor.toString(pojoSource), pojoDescriptor.toString(pojoTarget));
     }
+
+    @Test
+    public void testNewInstance() {
+        assertNotNull(pojoDescriptor.newInstance());
+    }
+
+    @Test
+    public void testWriteObjectOutputStream() throws Throwable {
+        PojoExample pojoSource = new PojoExample();
+        pojoSource.setStringProp("String Property");
+        pojoSource.setBooleanProp(true);
+        pojoSource.setBooleanProp1(Boolean.TRUE);
+        pojoSource.setDateProp(new Date());
+        pojoSource.setByteProp1(new Byte((byte) 15));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        pojoDescriptor.serialize(oos, pojoSource);
+        assertNotSame(baos.toByteArray().length, 0);
+    }
+
+    @Test
+    public void testBeanToByteArray() throws Throwable {
+        PojoExample pojoSource = new PojoExample();
+        pojoSource.setStringProp("String Property");
+        pojoSource.setBooleanProp(true);
+        pojoSource.setBooleanProp1(Boolean.TRUE);
+        pojoSource.setDateProp(new Date());
+        pojoSource.setByteProp1(new Byte((byte) 15));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        pojoDescriptor.serialize(oos, pojoSource);
+        assertArrayEquals(baos.toByteArray(), pojoDescriptor.serialize(pojoSource));
+    }
+
+    @Test
+    public void testReset() throws Throwable {
+        PojoExample pojoSource = new PojoExample();
+        pojoSource.setStringProp("String Property");
+        pojoSource.setBooleanProp(true);
+        pojoSource.setBooleanProp1(Boolean.TRUE);
+        pojoSource.setDateProp(new Date());
+        pojoSource.setByteProp1(new Byte((byte) 15));
+
+        pojoSource.setIntProp1(new Integer(15));
+        pojoSource.setLongProp1(new Long(15));
+        pojoSource.setFloatProp1(new Float(15));
+
+        pojoDescriptor.reset(pojoSource);
+
+        PojoExample pojoDefault = new PojoExample();
+        assertEquals(pojoDescriptor.describe(pojoDefault), pojoDescriptor.describe(pojoSource));
+        assertEquals(pojoDescriptor.toString(pojoDefault), pojoDescriptor.toString(pojoSource));
+
+        PojoExample pojoDefault2 = pojoDescriptor.newInstance();
+        assertEquals(pojoDescriptor.describe(pojoDefault2), pojoDescriptor.describe(pojoSource));
+        assertEquals(pojoDescriptor.toString(pojoDefault2), pojoDescriptor.toString(pojoSource));
+
+    }
+
 }

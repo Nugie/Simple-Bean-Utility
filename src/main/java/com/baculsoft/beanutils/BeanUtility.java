@@ -1,7 +1,17 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2015 baculsoft.com.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.baculsoft.beanutils;
 
@@ -38,16 +48,23 @@ public final class BeanUtility {
     private static final char[] HEADER_METHOD_INVOKE_SETTER = "public final void invokeSetter(String propertyName,Object obj, Object value){".toCharArray();
     private static final char[] HEADER_METHOD_COPY_IGNORE_PROPERTIES = "public final void copy(Object objSource,Object objTarget,String[] ignoreProperties){".toCharArray();
     private static final char[] HEADER_METHOD_COPY = "public final void copy(Object objSource,Object objTarget){".toCharArray();
+    private static final char[] HEADER_METHOD_COPY_PROPERTY_WHEN_NOT_NULL = "public final void copyPropertyWhenNotNull(Object objSource,Object objTarget){".toCharArray();
     private static final char[] HEADER_METHOD_COPY_FROM_MAP = "public final void copyFromMap(java.util.Map c,Object objTarget){".toCharArray();
     private static final char[] HEADER_METHOD_DESCRIBE_NOT_NULL = "public final java.util.Map describeNotNullProperty(Object obj){".toCharArray();
     private static final char[] HEADER_METHOD_DESCRIBE = "public final java.util.Map describe(Object obj){".toCharArray();
     private static final char[] HEAEDER_METHOD_TO_STRING = "public final String toString(Object obj){".toCharArray();
-    private static final char[] HEADER_METHOD_SERIALIZE = "public final void serialize(java.io.ObjectOutputStream objectOutput, Object obj){".toCharArray();
+    private static final char[] HEADER_METHOD_SERIALIZE = "public final void serialize(java.io.ObjectOutputStream objectOutput, Object obj){".toCharArray();    
+    private static final char[] HEADER_METHOD_SERIALIZE_TO_BYTE_ARRAY = "public final byte[] serialize(Object obj){".toCharArray();
+    private static final char[] HEADER_METHOD_RESET = "public final void reset(Object obj){".toCharArray();
 
+    
+    private static final char[] HEADER_METHOD_NEW_INSTANCE_NO_PARAM="public final Object newInstance(){".toCharArray();
     private static final char[] CODE_IF = "if(\"".toCharArray();
     private static final char[] CODE_ELSE_IF = "else if(\"".toCharArray();
     private static final char[] CODE_EQ_PROPERTY_NAME = "\".equals(propertyName))".toCharArray();
-
+    private static final char[] CODE_DECLARE_FINAL_KEYWORD="final ".toCharArray();
+    private static final char[] CODE_DOUBLE_END_OF="}}".toCharArray();
+    private static final char[] CODE_DECLARE_FINAL_MAP="final java.util.Map mapReturn=new java.util.HashMap(".toCharArray();
     private static final char[] END_METHOD_RETURN_EMPTY_COLLECTION_MAP = "return java.util.Collections.EMPTY_MAP;}".toCharArray();
     private static final char[] END_METHOD_RETURN_MAP_RETURN = "return mapReturn;}".toCharArray();
     private static final char[] END_METHOD_RETURN_NULL = "return null}".toCharArray();
@@ -69,7 +86,7 @@ public final class BeanUtility {
     }
 
     private BeanUtility() {
-        throw new RuntimeException("Can't create instance of BeanUtility");
+        throw new RuntimeException("Can't create instance of "+BeanUtility.class.getName());
     }
 
     public static <T> BeanDescriptor<T> getDescriptor(Class<T> clazz) {
@@ -78,17 +95,20 @@ public final class BeanUtility {
             final List<Method> listSetter = new ArrayList<>(), listGetter = new ArrayList<>();
             final List<Constructor> listConstructor = new ArrayList<>();
             Constructor constructorNoParameter=collectAllConstructor(clazz, listConstructor);
-            System.out.println("----> "+constructorNoParameter);
             collectAllMethod(clazz, listSetter, listGetter);
             try {
                 CtClass ctClass = classPool.makeClass(PREFIX_CLASS_NAME_GEN + clazz.getSimpleName() + SUFFIX_CLASS_NAME_GET, clParent);
                 ctClass.setModifiers(CLASS_MODIFIER);
                 ctClass.setGenericSignature(clazz.getName());
                 StringBuilder sb = new StringBuilder(128);
+                createNewMethodNewInstance(sb, ctClass, clazz, constructorNoParameter);
                 createNewMethodSerialize(sb, ctClass, clazz, listGetter);
+                createNewMethodReset(sb, ctClass, clazz, listSetter, listGetter);
+                createNewMethodSerializeToByte(sb, ctClass, clazz, listGetter);
                 createNewMethodDescribe(sb, ctClass, clazz, listGetter);
                 createNewMethodDescribeNotNullProperty(sb, ctClass, clazz, listGetter);
                 createNewMethodCopy(sb, ctClass, clazz, listSetter, listGetter);
+                createNewMethodCopyPropertyWhenNotNull(sb, ctClass, clazz, listSetter, listGetter);
                 createNewMethodCopyWithIgnoreProperties(sb, ctClass, clazz, listSetter, listGetter);
                 createNewMethodInvokeGetter(sb, ctClass, clazz, listGetter);
                 createNewMethodInvokeSetter(sb, ctClass, clazz, listSetter);
@@ -195,7 +215,7 @@ public final class BeanUtility {
     private static void createNewMethodInvokeSetter(StringBuilder sb, CtClass clz, Class parameterClass, List<Method> listSetter) throws Throwable {
         sb.setLength(0);
         sb.append(HEADER_METHOD_INVOKE_SETTER);
-        sb.append("final ").append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")obj;");
+        sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")obj;");
         if (!listSetter.isEmpty()) {
             int indexNumber = 0;
             for (Method method : listSetter) {
@@ -232,8 +252,8 @@ public final class BeanUtility {
         sb.setLength(0);
         sb.append(HEADER_METHOD_COPY_IGNORE_PROPERTIES);
         if (!listGetter.isEmpty()) {
-            sb.append("final ").append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")objSource;");
-            sb.append("final ").append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")objSource;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
             sb.append("if(ignoreProperties==null || ignoreProperties.length==0){");
             for (Method method : listGetter) {
                 String setName = PREFIX_SETTER + method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
@@ -261,7 +281,7 @@ public final class BeanUtility {
                     }
                 }
                 if (validMethodSetter != null) {
-                    sb.append("final ").append(method.getReturnType().getName()).append(" $$_").append(propertyName).append(" = ").append("t.").append(method.getName()).append("();");
+                    sb.append(CODE_DECLARE_FINAL_KEYWORD).append(method.getReturnType().getName()).append(" $$_").append(propertyName).append(" = ").append("t.").append(method.getName()).append("();");
                     sb.append("t.").append(validMethodSetter.getName()).append("(o.").append(method.getName()).append("());");                    
                 }
             }
@@ -285,7 +305,7 @@ public final class BeanUtility {
                     numberValidSetter++;
                 }
             }
-            sb.append("}}");
+            sb.append(CODE_DOUBLE_END_OF);
         }
         sb.append("}");
         CtMethod ctNewMethod = CtNewMethod.make(sb.toString(), clz);
@@ -305,8 +325,8 @@ public final class BeanUtility {
         sb.setLength(0);
         sb.append(HEADER_METHOD_COPY);
         if (!listGetter.isEmpty()) {
-            sb.append("final ").append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")objSource;");
-            sb.append("final ").append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")objSource;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
             for (Method method : listGetter) {
                 String setName = PREFIX_SETTER + method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
                 Method validMethodSetter = null;
@@ -326,6 +346,48 @@ public final class BeanUtility {
         clz.addMethod(ctNewMethod);
     }
 
+    
+    /**
+     * 
+     * @param sb
+     * @param clz
+     * @param parameterClass
+     * @param listSetter
+     * @param listGetter
+     * @throws Throwable 
+     */
+    private static void createNewMethodCopyPropertyWhenNotNull(StringBuilder sb, CtClass clz, Class parameterClass, List<Method> listSetter, List<Method> listGetter) throws Throwable {
+        sb.setLength(0);
+        sb.append(HEADER_METHOD_COPY_PROPERTY_WHEN_NOT_NULL);
+        if (!listGetter.isEmpty()) {
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")objSource;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
+            for (Method method : listGetter) {
+                String setName = PREFIX_SETTER + method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
+                Method validMethodSetter = null;
+                for (Method methodSetter : listSetter) {
+                    if (setName.equals(methodSetter.getName())) {
+                        validMethodSetter = methodSetter;
+                        break;
+                    }
+                }
+                if (validMethodSetter != null) {
+                    if(method.getReturnType().isPrimitive()){
+                        sb.append("t.").append(validMethodSetter.getName()).append("(o.").append(method.getName()).append("());");                        
+                    }
+                    else{
+                        sb.append("if(o.").append(method.getName()).append("()!=null)");
+                        sb.append("t.").append(validMethodSetter.getName()).append("(o.").append(method.getName()).append("());");                                                
+                    }
+                }
+            }
+        }
+        sb.append("}");
+        CtMethod ctNewMethod = CtNewMethod.make(sb.toString(), clz);
+        clz.addMethod(ctNewMethod);
+    }
+
+    
     /**
      *
      * @param sb
@@ -339,7 +401,7 @@ public final class BeanUtility {
         sb.setLength(0);
         sb.append(HEADER_METHOD_COPY_FROM_MAP);
         if (!listGetter.isEmpty()) {
-            sb.append("final ").append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
             sb.append("final java.util.Iterator it=c.entrySet().iterator();");
             sb.append("while(it.hasNext()){");
             sb.append("final java.util.Map.Entry e=(java.util.Map.Entry)it.next();");
@@ -374,7 +436,7 @@ public final class BeanUtility {
                 }
             }
         }
-        sb.append("}}");
+        sb.append(CODE_DOUBLE_END_OF);
         CtMethod ctNewMethod = CtNewMethod.make(sb.toString(), clz);
         clz.addMethod(ctNewMethod);
     }
@@ -392,7 +454,7 @@ public final class BeanUtility {
         sb.append(HEADER_METHOD_DESCRIBE_NOT_NULL);
         sb.append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")obj;");
         if (!listGetter.isEmpty()) {
-            sb.append("final java.util.Map mapReturn=new java.util.HashMap(").append(listGetter.size()).append(");");
+            sb.append(CODE_DECLARE_FINAL_MAP).append(listGetter.size()).append(");");
             for (Method method : listGetter) {
                 String pgetName = method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
                 pgetName = pgetName.substring(0, 1).toLowerCase() + pgetName.substring(1);
@@ -424,7 +486,7 @@ public final class BeanUtility {
         sb.append(HEADER_METHOD_DESCRIBE);
         sb.append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")obj;");
         if (!listGetter.isEmpty()) {
-            sb.append("final java.util.Map mapReturn=new java.util.HashMap(").append(listGetter.size()).append(");");
+            sb.append(CODE_DECLARE_FINAL_MAP).append(listGetter.size()).append(");");
             for (Method method : listGetter) {
                 String pgetName = method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
                 pgetName = pgetName.substring(0, 1).toLowerCase() + pgetName.substring(1);
@@ -514,6 +576,138 @@ public final class BeanUtility {
         clz.addMethod(ctNewMethod);
     }
 
+
+    /**
+     *
+     * @param sb
+     * @param clz
+     * @param parameterClass
+     * @param listGetter
+     * @throws Throwable
+     */
+    private static void createNewMethodSerializeToByte(StringBuilder sb, CtClass clz, Class parameterClass, List<Method> listGetter) throws Throwable {
+        sb.setLength(0);
+        sb.append(HEADER_METHOD_SERIALIZE_TO_BYTE_ARRAY);
+        sb.append("try{");
+        sb.append("final java.io.ByteArrayOutputStream baos=new java.io.ByteArrayOutputStream();");
+        sb.append("final java.io.ObjectOutputStream objectOutput=new java.io.ObjectOutputStream(baos);");
+        sb.append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")obj;");
+        if (!listGetter.isEmpty()) {
+            for (Method method : listGetter) {
+                Class type = method.getReturnType();
+                if (type.isPrimitive()) {
+                    if (type == boolean.class) {
+                        sb.append("objectOutput.writeBoolean(").append("o.").append(method.getName()).append("());");
+                    } else if (type == char.class) {
+                        sb.append("objectOutput.writeChar(").append("o.").append(method.getName()).append("());");
+                    } else if (type == byte.class) {
+                        sb.append("objectOutput.writeByte(").append("o.").append(method.getName()).append("());");
+                    } else if (type == short.class) {
+                        sb.append("objectOutput.writeShort(").append("o.").append(method.getName()).append("());");
+                    } else if (type == int.class) {
+                        sb.append("objectOutput.writeInt(").append("o.").append(method.getName()).append("());");
+                    }else if (type == long.class) {
+                        sb.append("objectOutput.writeLong(").append("o.").append(method.getName()).append("());");
+                    }else if (type == float.class) {
+                        sb.append("objectOutput.writeFloat(").append("o.").append(method.getName()).append("());");
+                    }else if (type == double.class) {
+                        sb.append("objectOutput.writeDouble(").append("o.").append(method.getName()).append("());");
+                    }
+
+                } else {
+                    sb.append("objectOutput.writeObject(").append("o.").append(method.getName()).append("());");
+                }
+            }
+        }
+        sb.append("return baos.toByteArray();");
+        sb.append('}');
+        sb.append("catch(java.io.IOException e){");
+        sb.append("throw new RuntimeException(e);");
+        sb.append('}');
+        sb.append('}');
+        CtMethod ctNewMethod = CtNewMethod.make(sb.toString(), clz);
+        clz.addMethod(ctNewMethod);
+    }
+    
+    /**
+     * 
+     * @param sb
+     * @param clz
+     * @param parameterClass
+     * @param constructorNoParameter
+     * @throws Throwable 
+     */
+    private static void createNewMethodNewInstance(StringBuilder sb, CtClass clz, Class parameterClass, Constructor constructorNoParameter) throws Throwable {
+        sb.setLength(0);
+        sb.append(HEADER_METHOD_NEW_INSTANCE_NO_PARAM);
+        if(constructorNoParameter==null){
+            sb.append("return null;");
+        }
+        else{
+            sb.append("return new ").append(parameterClass.getName()).append("();");
+        }
+        sb.append('}');
+        CtMethod ctNewMethod = CtNewMethod.make(sb.toString(), clz);
+        clz.addMethod(ctNewMethod);
+    }
+
+    
+    private static void createNewMethodReset(StringBuilder sb, CtClass clz, Class parameterClass, List<Method> listSetter, List<Method> listGetter) throws Throwable {
+        sb.setLength(0);
+        sb.append(HEADER_METHOD_RESET);
+        if (!listGetter.isEmpty()) {
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" o=(").append(parameterClass.getName()).append(")obj;");
+            for (Method method : listGetter) {
+                String setName = PREFIX_SETTER + method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
+                Method validMethodSetter = null;
+                for (Method methodSetter : listSetter) {
+                    if (setName.equals(methodSetter.getName())) {
+                        validMethodSetter = methodSetter;
+                        break;
+                    }
+                }
+                if (validMethodSetter != null) {
+                    if(method.getReturnType().isPrimitive()){
+                        Class returnType=method.getReturnType();
+                        if(returnType==boolean.class){
+                            sb.append("o.").append(validMethodSetter.getName()).append("(BOOLEAN_DEFAULT);");                                                    
+                        }
+                        else if(returnType==char.class){
+                            sb.append("o.").append(validMethodSetter.getName()).append("(CHAR_DEFAULT);");                                                    
+                        }
+                        else if(returnType==byte.class){
+                            sb.append("o.").append(validMethodSetter.getName()).append("(BYTE_DEFAULT);");                                                    
+                        }
+                        else if(returnType==short.class){
+                            sb.append("o.").append(validMethodSetter.getName()).append("(SHORT_DEFAULT);");                                                    
+                        }
+                        else if(returnType==int.class){
+                            sb.append("o.").append(validMethodSetter.getName()).append("(INT_DEFAULT);");                                                    
+                        }
+                        else if(returnType==long.class){
+                            sb.append("o.").append(validMethodSetter.getName()).append("(LONG_DEFAULT);");                                                    
+                        }
+                        else if(returnType==float.class){
+                            sb.append("o.").append(validMethodSetter.getName()).append("(FLOAT_DEFAULT);");                                                    
+                        }
+                        else{
+                            sb.append("o.").append(validMethodSetter.getName()).append("(DOUBLE_DEFAULT);");                                                                                
+                        }
+                        
+                        
+                    }
+                    else{
+                        sb.append("o.").append(validMethodSetter.getName()).append("(null);");                        
+                    }
+                }
+            }
+        }
+        sb.append("}");
+        CtMethod ctNewMethod = CtNewMethod.make(sb.toString(), clz);
+        clz.addMethod(ctNewMethod);
+    }
+
+    
     /**
      *
      * @param clz
@@ -564,5 +758,9 @@ public final class BeanUtility {
             return DOT_DOUBLE_VALUE;
         }
         throw new RuntimeException(clz.getName() + " not define toValue!");
+    }
+    
+    public static void main(String[] args) {
+        BeanUtility.getDescriptor(String.class);
     }
 }

@@ -33,8 +33,6 @@ public class PojoExample {
     private Float floatProp1;
     private Double doubleProp1;
 
-    public PojoExample() {
-    }
 
     public Date getDateProp() {
         return dateProp;
