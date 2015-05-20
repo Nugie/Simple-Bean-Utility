@@ -17,6 +17,7 @@ package com.baculsoft.beanutils;
 
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,14 +33,13 @@ public abstract class BeanDescriptor<T> implements Serializable {
 
     private final String classHandleName;
 
-    protected static final boolean BOOLEAN_DEFAULT=false;
-    protected static final char CHAR_DEFAULT=0;
-    protected static final byte BYTE_DEFAULT=0;
-    protected static final short SHORT_DEFAULT=0;
-    protected static final int INT_DEFAULT=0;
-    protected static final long LONG_DEFAULT=0;
-    
-    protected static final float FLOAT_DEFAULT=0f;
+    protected static final boolean BOOLEAN_DEFAULT=false;    
+    protected static final char CHAR_DEFAULT=0;    
+    protected static final byte BYTE_DEFAULT=0;    
+    protected static final short SHORT_DEFAULT=0;   
+    protected static final int INT_DEFAULT=0;    
+    protected static final long LONG_DEFAULT=0;    
+    protected static final float FLOAT_DEFAULT=0f;    
     protected static final double DOUBLE_DEFAULT=0d;
 
     /**
@@ -146,7 +146,7 @@ public abstract class BeanDescriptor<T> implements Serializable {
      * @param obj2
      * @return 
      */
-    public abstract T compare(T obj1,T obj2);
+    public abstract List<Result> compare(T obj1,T obj2);
 
     /**
      * 
@@ -227,16 +227,29 @@ public abstract class BeanDescriptor<T> implements Serializable {
         return d;
     }
 
+    /**
+     * 
+     * @return hashCode
+     */
     @Override
     public final int hashCode() {
         return hashCode;
     }
 
+    /**
+     * 
+     * @param obj
+     * @return 
+     */
     @Override
     public final boolean equals(Object obj) {
         return (obj instanceof BeanDescriptor) && this.hashCode != ((BeanDescriptor<?>) obj).hashCode;
     }
 
+    /**
+     * 
+     * @return classHandleName
+     */
     @Override
     public String toString() {
         return classHandleName;

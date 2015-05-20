@@ -7,10 +7,12 @@ package com.baculsoft.beanutils.test;
 
 import com.baculsoft.beanutils.BeanDescriptor;
 import com.baculsoft.beanutils.BeanUtility;
+import com.baculsoft.beanutils.Result;
 import com.baculsoft.beanutils.test.pojo.PojoExample;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -234,4 +236,29 @@ public class TestBeanUtili {
 
     }
 
+    
+    @Test
+    public void testCompare() {
+        PojoExample pojoSource = new PojoExample();
+        pojoSource.setStringProp("String Property");
+        pojoSource.setBooleanProp(true);
+        pojoSource.setBooleanProp1(Boolean.TRUE);
+        pojoSource.setDateProp(new Date());
+        pojoSource.setByteProp1(new Byte((byte) 12));
+
+        PojoExample pojoTarget = new PojoExample();
+        pojoDescriptor.copy(pojoSource, pojoTarget);
+
+        List<Result> result=pojoDescriptor.compare(pojoSource, pojoTarget);
+        assertEquals(result.size(),0);
+
+        
+        pojoSource.setDateProp(null);
+        
+        result=pojoDescriptor.compare(pojoSource, pojoTarget);
+        assertEquals(result.size(),1);
+        System.out.println(result);
+        
+    }
+    
 }

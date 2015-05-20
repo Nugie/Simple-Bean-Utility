@@ -15,21 +15,47 @@
  */
 package com.baculsoft.beanutils;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 /**
  *
  * @author Natalino Nugeraha
  */
-public final class Result<V> {
+public final class Result<V> implements Serializable{
+
+    private final String name;
     private final V value1;
     private final V value2;
+    private final int hashCode;
+    private final String toString;
 
-    Result(V value1,V value2) {
-        this.value1=value1;
-        this.value2=value2;
+    /**
+     *
+     * @param name
+     * @param value1
+     * @param value2
+     */
+    public Result(String name, V value1, V value2) {
+        this.name = name;
+        this.value1 = value1;
+        this.value2 = value2;
+        this.hashCode = (this.name != null ? this.name.hashCode() : 0)+ (this.value1 != null ? this.value1.hashCode() : 0)+ (this.value2 != null ? this.value2.hashCode() : 0);
+        this.toString="Result{" + "name=" + name + ", value1=" + value1 + ", value2=" + value2 + '}';
     }
+
 
     /**
      * 
+     * @return name
+     */
+    public String getName() {
+        return name;
+    }
+
+    
+    /**
+     *
      * @return value1
      */
     public V getValue1() {
@@ -37,10 +63,47 @@ public final class Result<V> {
     }
 
     /**
-     * 
+     *
      * @return value2
      */
     public V getValue2() {
         return value2;
     }
+
+    /**
+     * 
+     * @return hashCode
+     */
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Result) {
+            final Result<?> other = (Result<?>) obj;
+            if (!Objects.equals(this.name, other.name)) {
+                return false;
+            }
+            if (!Objects.equals(this.value1, other.value1)) {
+                return false;
+            }
+            if (!Objects.equals(this.value2, other.value2)) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 
+     * @return toString
+     */
+    @Override
+    public String toString() {
+        return toString;
+    }
+
 }
