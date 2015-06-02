@@ -15,7 +15,6 @@
  */
 package com.baculsoft.beanutils;
 
-import java.io.FileInputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -58,6 +57,7 @@ public final class BeanUtility {
     private static final char[] HEADER_METHOD_SERIALIZE_TO_BYTE_ARRAY = "public final byte[] serialize(Object obj){".toCharArray();
     private static final char[] HEADER_METHOD_RESET = "public final void reset(Object obj){".toCharArray();
     private static final char[] HEADER_METHOD_COMPARE = "public final java.util.List compare(Object obj1,Object obj2){".toCharArray();
+    private static final char[] HEADER_METHOD_CLONE = "public final Object clone(Object objSource){".toCharArray();
 
     
     private static final char[] HEADER_METHOD_NEW_INSTANCE_NO_PARAM="public final Object newInstance(){".toCharArray();
@@ -70,6 +70,9 @@ public final class BeanUtility {
     private static final char[] CODE_LOCAL_VAR_O_DOT="o.".toCharArray();
     private static final char[] CODE_SET_LOCAL_VAR_O=" o=(".toCharArray();
     private static final char[] CODE_LOCAL_VAR_T_DOT="t.".toCharArray();
+    private static final char[] CODE_SPACE_LOCAL_T=" t=(".toCharArray();
+    private static final char[] CODE_LOCAL_VAR_RET="ret=".toCharArray();
+    private static final char[] CODE_INVOKE_AUTOBOXING_O="autoboxing(o.".toCharArray();
     private static final char[] END_METHOD_RETURN_EMPTY_COLLECTION_MAP = "return java.util.Collections.EMPTY_MAP;}".toCharArray();
     private static final char[] END_METHOD_RETURN_MAP_RETURN = "return mapReturn;}".toCharArray();
     private static final char[] END_METHOD_RETURN_NULL = "return null}".toCharArray();
@@ -118,7 +121,7 @@ public final class BeanUtility {
                 CtClass ctClass = classPool.makeClass(PREFIX_CLASS_NAME_GEN + clazz.getSimpleName() + SUFFIX_CLASS_NAME_GET, clParent);
                 ctClass.setModifiers(CLASS_MODIFIER);
                 ctClass.setGenericSignature(clazz.getName());
-                StringBuilder sb = new StringBuilder(128);
+                StringBuilder sb = new StringBuilder(1024);
                 createNewMethodNewInstance(sb, ctClass, clazz, constructorNoParameter);
                 createNewMethodSerialize(sb, ctClass, clazz, listGetter);
                 createNewMethodReset(sb, ctClass, clazz, listSetter, listGetter);
@@ -133,10 +136,12 @@ public final class BeanUtility {
                 createNewMethodCopyFromMap(sb, ctClass, clazz, listSetter, listGetter);
                 createNewMethodToString(sb, ctClass, clazz, listGetter);
                 createNewMethodCompare(sb, ctClass, clazz, listGetter);
+                createNewMethodClone(sb, ctClass, clazz, listSetter, listGetter,constructorNoParameter);
                 ctClass.writeFile(("D:\\"));
                 beanDescriptor = (BeanDescriptor<T>) ctClass.toClass().getDeclaredConstructor(Class.class).newInstance(clazz);
                 mapBeanDescriptor.put(clazz, beanDescriptor);
                 sb.setLength(0);
+                sb=null;
             } catch (Throwable t) {
                 throw new RuntimeException(t);
             }
@@ -216,9 +221,9 @@ public final class BeanUtility {
 
                 sb.append(indexNumber == 0 ? CODE_IF : CODE_ELSE_IF).append(pgetName).append(CODE_EQ_PROPERTY_NAME);
                 if (method.getReturnType().isPrimitive()) {
-                    sb.append("ret=").append("autoboxing(o.").append(method.getName()).append("());");
+                    sb.append(CODE_LOCAL_VAR_RET).append(CODE_INVOKE_AUTOBOXING_O).append(method.getName()).append("());");
                 } else {
-                    sb.append("ret=").append(CODE_LOCAL_VAR_O_DOT).append(method.getName()).append("();");
+                    sb.append(CODE_LOCAL_VAR_RET).append(CODE_LOCAL_VAR_O_DOT).append(method.getName()).append("();");
                 }
                 indexNumber++;
             }
@@ -279,7 +284,7 @@ public final class BeanUtility {
         sb.append(HEADER_METHOD_COPY_IGNORE_PROPERTIES);
         if (!listGetter.isEmpty()) {
             sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SET_LOCAL_VAR_O).append(parameterClass.getName()).append(")objSource;");
-            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SPACE_LOCAL_T).append(parameterClass.getName()).append(")objTarget;");
             sb.append("if(ignoreProperties==null || ignoreProperties.length==0){");
             for (Method method : listGetter) {
                 String setName = PREFIX_SETTER + method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
@@ -352,7 +357,7 @@ public final class BeanUtility {
         sb.append(HEADER_METHOD_COPY);
         if (!listGetter.isEmpty()) {
             sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SET_LOCAL_VAR_O).append(parameterClass.getName()).append(")objSource;");
-            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SPACE_LOCAL_T).append(parameterClass.getName()).append(")objTarget;");
             for (Method method : listGetter) {
                 String setName = PREFIX_SETTER + method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
                 Method validMethodSetter = null;
@@ -387,7 +392,7 @@ public final class BeanUtility {
         sb.append(HEADER_METHOD_COPY_PROPERTY_WHEN_NOT_NULL);
         if (!listGetter.isEmpty()) {
             sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SET_LOCAL_VAR_O).append(parameterClass.getName()).append(")objSource;");
-            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SPACE_LOCAL_T).append(parameterClass.getName()).append(")objTarget;");
             for (Method method : listGetter) {
                 String setName = PREFIX_SETTER + method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
                 Method validMethodSetter = null;
@@ -427,7 +432,7 @@ public final class BeanUtility {
         sb.setLength(0);
         sb.append(HEADER_METHOD_COPY_FROM_MAP);
         if (!listGetter.isEmpty()) {
-            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")objTarget;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SPACE_LOCAL_T).append(parameterClass.getName()).append(")objTarget;");
             sb.append("final java.util.Iterator it=c.entrySet().iterator();");
             sb.append("while(it.hasNext()){");
             sb.append("final java.util.Map.Entry e=(java.util.Map.Entry)it.next();");
@@ -485,7 +490,7 @@ public final class BeanUtility {
                 String pgetName = method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
                 pgetName = pgetName.substring(0, 1).toLowerCase() + pgetName.substring(1);
                 if (method.getReturnType().isPrimitive()) {
-                    sb.append("mapReturn.put(\"").append(pgetName).append("\",").append("autoboxing(o.").append(method.getName()).append("()));");
+                    sb.append("mapReturn.put(\"").append(pgetName).append("\",").append(CODE_INVOKE_AUTOBOXING_O).append(method.getName()).append("()));");
                 } else {
                     sb.append("if(o.").append(method.getName()).append("()!=null)");
                     sb.append("mapReturn.put(\"").append(pgetName).append("\",o.").append(method.getName()).append("());");
@@ -517,7 +522,7 @@ public final class BeanUtility {
                 String pgetName = method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
                 pgetName = pgetName.substring(0, 1).toLowerCase() + pgetName.substring(1);
                 if (method.getReturnType().isPrimitive()) {
-                    sb.append("mapReturn.put(\"").append(pgetName).append("\",").append("autoboxing(o.").append(method.getName()).append("()));");
+                    sb.append("mapReturn.put(\"").append(pgetName).append("\",").append(CODE_INVOKE_AUTOBOXING_O).append(method.getName()).append("()));");
                 } else {
                     sb.append("mapReturn.put(\"").append(pgetName).append("\",o.").append(method.getName()).append("());");
                 }
@@ -615,7 +620,7 @@ public final class BeanUtility {
         if (!listGetter.isEmpty()) {
             sb.append("java.util.List list=new java.util.ArrayList(").append(listGetter.size()).append(");");                                
             sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SET_LOCAL_VAR_O).append(parameterClass.getName()).append(")obj1;");
-            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=(").append(parameterClass.getName()).append(")obj2;");
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SPACE_LOCAL_T).append(parameterClass.getName()).append(")obj2;");
             for (Method method : listGetter) {
                 String pgetName = method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
                 pgetName = pgetName.substring(0, 1).toLowerCase() + pgetName.substring(1);
@@ -784,6 +789,38 @@ public final class BeanUtility {
         clz.addMethod(ctNewMethod);
     }
 
+
+    private static void createNewMethodClone(StringBuilder sb, CtClass clz, Class parameterClass, List<Method> listSetter, List<Method> listGetter,Constructor constructorNoParameter) throws Throwable {
+        sb.setLength(0);
+        sb.append(HEADER_METHOD_CLONE);
+        if(constructorNoParameter==null){
+            sb.append("return null;}");
+            return;
+        }
+        else{
+            sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(" t=new ").append(parameterClass.getName()).append("();");
+            if (!listGetter.isEmpty()) {
+                sb.append(CODE_DECLARE_FINAL_KEYWORD).append(parameterClass.getName()).append(CODE_SET_LOCAL_VAR_O).append(parameterClass.getName()).append(")objSource;");
+                for (Method method : listGetter) {
+                    String setName = PREFIX_SETTER + method.getName().replace(PREFIX_IS, "").replace(PREFIX_GETTER, "");
+                    Method validMethodSetter = null;
+                    for (Method methodSetter : listSetter) {
+                        if (setName.equals(methodSetter.getName())) {
+                            validMethodSetter = methodSetter;
+                            break;
+                        }
+                    }
+                    if (validMethodSetter != null) {
+                        sb.append(CODE_LOCAL_VAR_T_DOT).append(validMethodSetter.getName()).append("(o.").append(method.getName()).append("());");
+                    }
+                }
+            }
+            sb.append("return t;}");
+            
+        }
+        CtMethod ctNewMethod = CtNewMethod.make(sb.toString(), clz);
+        clz.addMethod(ctNewMethod);
+    }
     
     /**
      *

@@ -260,5 +260,41 @@ public class TestBeanUtili {
         System.out.println(result);
         
     }
+
+    
+    @Test
+    public void testClone() {
+        PojoExample pojoSource = new PojoExample();
+        pojoSource.setStringProp("String Property");
+        pojoSource.setBooleanProp(true);
+        pojoSource.setBooleanProp1(Boolean.TRUE);
+        pojoSource.setDateProp(new Date());
+        pojoSource.setByteProp1(new Byte((byte) 12));
+        pojoSource.setCharProp('A');
+        pojoSource.setCharProp1(new Character('A'));
+        pojoSource.setIntProp(560);
+        pojoSource.setIntProp1(new Integer(333));
+        pojoSource.setLongProp(5999l);
+        pojoSource.setLongProp1(new Long(5999l));
+
+        
+        PojoExample pojoTarget = pojoDescriptor.clone(pojoSource);
+
+        List<Result> result=pojoDescriptor.compare(pojoSource, pojoTarget);
+        assertEquals(result.size(),0);
+
+        
+        pojoSource.setDateProp(null);
+        
+        result=pojoDescriptor.compare(pojoSource, pojoTarget);
+        assertEquals(result.size(),1);
+
+        
+        pojoSource.setBooleanProp(false);
+        
+        result=pojoDescriptor.compare(pojoSource, pojoTarget);
+        assertEquals(result.size(),2);
+        
+    }
     
 }

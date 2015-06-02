@@ -154,6 +154,13 @@ public abstract class BeanDescriptor<T> implements Serializable {
      */
     public abstract void reset(T obj);
 
+    /**
+     * 
+     * @param source
+     * @return 
+     */
+    public abstract T clone(T source);
+
     
     /**
      *

@@ -113,11 +113,22 @@ public class TestBeanUtil2 {
         pojoSource.setBooleanProp(true);
         pojoSource.setBooleanProp1(Boolean.TRUE);
         pojoSource.setDateProp(new Date());
+        
         pojoSource.setByteProp1(new Byte((byte) 11));
+        pojoSource.setByteProp((byte) 11);
+        
         pojoSource.setIntProp1(new Integer(15125));
+        pojoSource.setIntProp(155);
+        
         pojoSource.setLongProp1(new Long(20053215235l));
+        pojoSource.setLongProp(12325352l);
+        
         pojoSource.setFloatProp1(new Float(20053215235f));
+        pojoSource.setFloatProp(498485802.4f);
 
+        pojoSource.setDoubleProp1(new Double(99593884364.25326214));
+        pojoSource.setDoubleProp(0.96925326214);
+        
         pojoDescriptor.describe(pojoSource);
 
         org.apache.commons.beanutils.BeanUtils.describe(pojoSource);
@@ -128,7 +139,6 @@ public class TestBeanUtil2 {
 
         }
         t1 = System.currentTimeMillis() - t1;
-
         long t2 = System.currentTimeMillis();
         for (int i = 0; i < 50; i++) {
             org.apache.commons.beanutils.BeanUtils.describe(pojoSource);
@@ -140,7 +150,32 @@ public class TestBeanUtil2 {
         System.out.println("apache commons : t2 --->" + t2);
         System.out.println(pojoDescriptor.describe(pojoSource).equals(pojoDescriptor.describe(pojoSource)));
 
-        assertEquals(pojoDescriptor.describe(pojoSource), pojoDescriptor.describe(pojoSource));
+        assertEquals(pojoDescriptor.describe(pojoSource), pojoDescriptor.describe(pojoSource));        
+        System.out.println("----------------------------------------------------------");
+    }
+
+    @Test    
+    public void testNewInstance(){
+        BeanUtils.instantiate(PojoExample.class);
+        pojoDescriptor.newInstance();
+        
+        System.out.println("-----------------\nTime to new Instance");
+        long t1=System.currentTimeMillis();
+        for(int i=0;i<50000;i++){
+            pojoDescriptor.newInstance();            
+        }
+        t1=System.currentTimeMillis()-t1;
+
+        long t2 = System.currentTimeMillis();
+        for (int i = 0; i < 50000; i++) {
+            BeanUtils.instantiate(PojoExample.class);
+        }
+        t2 = System.currentTimeMillis() - t2;
+        
+        System.out.println("this class t1:"+t1);        
+        System.out.println("Spring Beans t2:" + t2);
+        System.out.println("------------------------------");
+        
     }
 
 }
