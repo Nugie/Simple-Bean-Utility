@@ -16,7 +16,6 @@
 package com.baculsoft.beanutils;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
  *
@@ -28,7 +27,6 @@ public final class Result<V> implements Serializable{
     private final V value1;
     private final V value2;
     private final int hashCode;
-    private final String toString;
 
     /**
      *
@@ -41,7 +39,6 @@ public final class Result<V> implements Serializable{
         this.value1 = value1;
         this.value2 = value2;
         this.hashCode = (this.name != null ? this.name.hashCode() : 0)+ (this.value1 != null ? this.value1.hashCode() : 0)+ (this.value2 != null ? this.value2.hashCode() : 0);
-        this.toString="Result{" + "name=" + name + ", value1=" + value1 + ", value2=" + value2 + '}';
     }
 
 
@@ -79,17 +76,22 @@ public final class Result<V> implements Serializable{
         return hashCode;
     }
 
+    /**
+     * 
+     * @param obj
+     * @return 
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Result) {
             final Result<?> other = (Result<?>) obj;
-            if (!Objects.equals(this.name, other.name)) {
+            if (! (name == other.name) || (name != null && name.equals(other.name))) {
                 return false;
             }
-            if (!Objects.equals(this.value1, other.value1)) {
+            else if (! (value1 == other.value1) || (value1 != null && value1.equals(other.value1))) {
                 return false;
             }
-            if (!Objects.equals(this.value2, other.value2)) {
+            else if (! (value2 == other.value2) || (value2 != null && value2.equals(other.value2))) {
                 return false;
             }
             return true;
@@ -103,7 +105,7 @@ public final class Result<V> implements Serializable{
      */
     @Override
     public String toString() {
-        return toString;
+        return "Result{" + "name=" + name + ", value1=" + value1 + ", value2=" + value2 + '}';
     }
 
 }
